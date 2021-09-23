@@ -124,10 +124,24 @@ public class RegistryProtocol implements Protocol {
         registry.register(registedProviderUrl);
     }
 
+    /**
+     * 很明显，这个 RegistryProtocol 是用来实现服务注册的
+     *
+     * 这里面会有很多处理逻辑
+     * （1）实现对应协议的服务发布；
+     * （2）实现服务注册；
+     * （3）订阅服务重写。
+     *
+     * @param originInvoker
+     * @param <T>
+     * @return
+     * @throws RpcException
+     */
     public <T> Exporter<T> export(final Invoker<T> originInvoker) throws RpcException {
         //export invoker
         final ExporterChangeableWrapper<T> exporter = doLocalExport(originInvoker);
 
+        // 这里获得的是 zookeeper 注册中心的 url: zookeeper://ip:port
         URL registryUrl = getRegistryUrl(originInvoker);
 
         //registry provider
@@ -138,7 +152,7 @@ public class RegistryProtocol implements Protocol {
         boolean register = registedProviderUrl.getParameter("register", true);
 
         ProviderConsumerRegTable.registerProvider(originInvoker, registryUrl, registedProviderUrl);
-
+        // 是否配置了注册中心，如果是，则需要注册
         if (register) {
             register(registryUrl, registedProviderUrl);
             ProviderConsumerRegTable.getProviderWrapper(originInvoker).setReg(true);
@@ -151,6 +165,7 @@ public class RegistryProtocol implements Protocol {
         overrideListeners.put(overrideSubscribeUrl, overrideSubscribeListener);
         registry.subscribe(overrideSubscribeUrl, overrideSubscribeListener);
         //Ensure that a new exporter instance is returned every time export
+        // 保证每次 export 都返回一个新的 exporter 实例
         return new DestroyableExporter<T>(exporter, originInvoker, overrideSubscribeUrl, registedProviderUrl);
     }
 

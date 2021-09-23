@@ -74,6 +74,12 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
         return SPRING_CONTEXT;
     }
 
+    /**
+     * ApplicationContextAware
+     * 实现了这个接口的 bean，当 spring 容器初始化的时候，会自动的将 ApplicationContext 注入进来
+     *
+     * @param applicationContext 上下文
+     */
     public void setApplicationContext(ApplicationContext applicationContext) {
         this.applicationContext = applicationContext;
         SpringExtensionFactory.addApplicationContext(applicationContext);
@@ -99,6 +105,12 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
         }
     }
 
+    /**
+     * BeanNameAware
+     * 获得自身初始化时，本身的 bean 的 id 属性，被重写的方法为 setBeanName
+     *
+     * @param name bean name
+     */
     public void setBeanName(String name) {
         this.beanName = name;
     }
@@ -112,11 +124,27 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
         return service;
     }
 
+    /**
+     * ApplicationListener
+     * ApplicationEvent 事件监听，spring 容器启动后会发一个事件通知。
+     * 被重写的方法为:onApplicationEvent,onApplicationEvent 方法传入的对象是 ContextRefreshedEvent。
+     * 这个对象是当 Spring 的上下文被刷新或者加载完毕的时候触发的。因此服务就是在 Spring 的上下文刷新后进行导出操作的。
+     *
+     * 功能：
+     * spring 容器启动之后，会收到一个这样的事件通知，这里面做了两个事情
+     *
+     * 判断服务是否已经发布过
+     * 如果没有发布，则调用调用 export 进行服务发布的流程(这里就是入口)
+     *
+     * @param event spring 容器启动后会发一个事件通知
+     */
     public void onApplicationEvent(ContextRefreshedEvent event) {
+        // 判断服务是否延迟发布，或者已经发布过
         if (isDelay() && !isExported() && !isUnexported()) {
             if (logger.isInfoEnabled()) {
                 logger.info("The service ready on spring started. service: " + getInterface());
             }
+            // 发布
             export();
         }
     }
@@ -130,6 +158,13 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
         return supportedApplicationListener && (delay == null || delay == -1);
     }
 
+    /**
+     * InitializingBean接口为bean提供了初始化方法的方式，
+     * 它只包括afterPropertiesSet方法，凡是继承该接口的类，在初始化bean的时候都会执行该方法。
+     *
+     * 功能：
+     * 把 dubbo 中配置的 application、registry、service、protocol 等信息，加载到对应的 config 实体中，便于后续的使用。
+     */
     @SuppressWarnings({"unchecked", "deprecation"})
     public void afterPropertiesSet() throws Exception {
         if (getProvider() == null) {
@@ -261,6 +296,9 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
         }
     }
 
+    /**
+     * DisposableBean 被重写的方法为 destroy，bean 被销毁的时候，spring 容器会自动执行 destory 方法，比如释放资源
+     */
     public void destroy() throws Exception {
         // This will only be called for singleton scope bean, and expected to be called by spring shutdown hook when BeanFactory/ApplicationContext destroys.
         // We will guarantee dubbo related resources being released with dubbo shutdown hook.

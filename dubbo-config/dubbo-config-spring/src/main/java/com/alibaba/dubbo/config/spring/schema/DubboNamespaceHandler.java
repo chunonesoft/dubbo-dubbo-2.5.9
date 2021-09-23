@@ -27,6 +27,15 @@ import org.springframework.beans.factory.xml.NamespaceHandlerSupport;
  *
  * @export
  */
+
+/**
+ * (1)spring.schemas文件用来配置schame文件的位置;
+ * (2)当spring容器扫描到配置文件，例如dubbo-consumeer.xml，遇到名称空间：xmlns:dubbo="http://code.alibabatech.com/schema/dubbo"
+ * (3)就会通过名称空间去查询对应的xsd约束文件，就如schemaLocation中配置的:xsi:schemaLocation="
+ *        http://code.alibabatech.com/schema/dubbo http://code.alibabatech.com/schema/dubbo/dubbo.xsd"
+ * (4)再用这个找到的xsd去spring.schemas文件中找到xsd文件的位置，并校验xsd文件的正确性，返回当前文件(applicationContext.xml)的Document对象
+ * (5)最终加载spring.handlers文件，然后调用DubboNamespaceHandler的init方法，然后是registerBeanDefinitionParser方法，该方法将节点名称和解析封装在NamespaceHandlerSupport的map中。
+ */
 public class DubboNamespaceHandler extends NamespaceHandlerSupport {
 
     static {
